@@ -99,14 +99,16 @@ stock bool IsValidClient(int client)
 int TRWIN[] = {0, 3, 8, 12, 17, 18};
 int CTWIN[] = {4, 5, 6, 7, 10, 11, 13, 16, 19};
 
-bool IsCTReason(int reason) {
+bool IsCTReason(int reason) 
+{
 	for(int i = 0;i<sizeof(CTWIN);i++)
 		if(CTWIN[i] == reason) return true;
 
 	return false;
 }
 
-bool IsTRReason(int reason) {
+bool IsTRReason(int reason) 
+{
 	for(int i = 0;i<sizeof(TRWIN);i++)
 		if(TRWIN[i] == reason) return true;
 
@@ -123,12 +125,10 @@ int GetWinner(int reason) {
 	return 0;
 }
 
-
-
 public Action CS_OnTerminateRound(float &delay, CSRoundEndReason &reason)
 {
 	int winner = GetWinner(view_as<int>(reason));
-	bool random = GetConVarInt(g_hPlayType) == 1;
+	bool random = g_hPlayType.IntValue == 1;
 
 	char szSound[128];
 
@@ -143,10 +143,10 @@ public Action CS_OnTerminateRound(float &delay, CSRoundEndReason &reason)
 	if(Success) {
 		PlayMusicAll(szSound);
 
-		if(GetConVarInt(g_hStop) == 1)
+		if(g_hStop.IntValue == 1)
 			StopMapMusic();
 
-		if(GetConVarBool(g_playToTheEnd) && soundLib) {
+		if(g_playToTheEnd.BoolValue && soundLib) {
 			float length = soundLenght(szSound);
 			delay = length;
 			return Plugin_Changed;
@@ -156,19 +156,18 @@ public Action CS_OnTerminateRound(float &delay, CSRoundEndReason &reason)
 	return Plugin_Continue;
 }
 
-
 void PlayMusicAll(char[] szSound)
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if(IsValidClient(i) && (GetConVarInt(g_ClientSettings) == 0 || GetIntCookie(i, g_ResPlayCookie) == 0))
+		if(IsValidClient(i) && (_ClientSettings.IntValue == 0 || GetIntCookie(i, g_ResPlayCookie) == 0))
 		{
 			float selectedVolume = GetClientVolume(i);
 			PlaySoundClient(i, szSound, selectedVolume);
 		}
 	}
 	
-	if(GetConVarInt(g_PlayPrint) == 1)
+	if(g_PlayPrint.IntValue == 1)
 	{
 		char soundKey[100];
 		char soundPrint[512];
@@ -185,9 +184,9 @@ void PlayMusicAll(char[] szSound)
 }
 
 
-public void Event_RoundStart(Handle event, const char[] name, bool dontBroadcast)
+public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
-	if(GetConVarInt(g_hStop) == 1)
+	if(g_hStop.IntValue == 1)
 	{
 		MapSounds();
 	}
@@ -200,7 +199,7 @@ public void SoundCookieHandler(int client, CookieMenuAction action, any info, ch
 
 public void OnClientPutInServer(int client)
 {
-	if(GetConVarInt(g_ClientSettings) == 1)
+	if(g_ClientSettings.IntValue == 1)
 	{
 		CreateTimer(3.0, msg, client);
 	}
@@ -216,43 +215,43 @@ public Action msg(Handle timer, any client)
 
 public Action abnermenu(int client, int args)
 {
-	if(GetConVarInt(g_ClientSettings) != 1)
+	if(g_ClientSettings.IntValue != 1)
 	{
 		return Plugin_Handled;
 	}
 	
 	int cookievalue = GetIntCookie(client, g_ResPlayCookie);
-	Handle g_CookieMenu = CreateMenu(AbNeRMenuHandler);
-	SetMenuTitle(g_CookieMenu, "Round End Sounds by AbNeR_CSS");
+	Menu g_CookieMenu = new Menu(AbNeRMenuHandler);
+	g_CookieMenu.SetTitle("Round End Sounds by AbNeR_CSS");
 	char Item[128];
 	if(cookievalue == 0)
 	{
 		Format(Item, sizeof(Item), "%t %t", "RES_ON", "Selected"); 
-		AddMenuItem(g_CookieMenu, "ON", Item);
+		g_CookieMenu.AddItem("ON", Item);
 		Format(Item, sizeof(Item), "%t", "RES_OFF"); 
-		AddMenuItem(g_CookieMenu, "OFF", Item);
+		g_CookieMenu.AddItem("OFF", Item);
 	}
 	else
 	{
 		Format(Item, sizeof(Item), "%t", "RES_ON");
-		AddMenuItem(g_CookieMenu, "ON", Item);
+		g_CookieMenu.AddItem("ON", Item);
 		Format(Item, sizeof(Item), "%t %t", "RES_OFF", "Selected"); 
-		AddMenuItem(g_CookieMenu, "OFF", Item);
+		g_CookieMenu.AddItem("OFF", Item);
 	}
 
 	Format(Item, sizeof(Item), "%t", "VOLUME");
-	AddMenuItem(g_CookieMenu, "volume", Item);
+	g_CookieMenu.AddItem("volume", Item);
 
 
-	SetMenuExitBackButton(g_CookieMenu, true);
-	SetMenuExitButton(g_CookieMenu, true);
-	DisplayMenu(g_CookieMenu, client, 30);
+	g_CookieMenu.ExitBackButton = true;
+	g_CookieMenu.ExitButton = true;
+	g_CookieMenu.Display(client, 30);
 	return Plugin_Continue;
 }
 
-public int AbNeRMenuHandler(Handle menu, MenuAction action, int client, int param2)
+public int AbNeRMenuHandler(Menu menu, MenuAction action, int client, int param2)
 {
-	Handle g_CookieMenu = CreateMenu(AbNeRMenuHandler);
+	Menu g_CookieMenu = new Menu(AbNeRMenuHandler);
 	if (action == MenuAction_DrawItem)
 	{
 		return ITEMDRAW_DEFAULT;
@@ -280,7 +279,7 @@ public int AbNeRMenuHandler(Handle menu, MenuAction action, int client, int para
 				VolumeMenu(client);
 			}
 		}
-		CloseHandle(g_CookieMenu);
+		delete g_CookieMenu;
 	}
 	else if(action == MenuAction_End)
 	{
@@ -289,9 +288,8 @@ public int AbNeRMenuHandler(Handle menu, MenuAction action, int client, int para
 	return 0;
 }
 
-void VolumeMenu(int client){
-	
-
+void VolumeMenu(int client)
+{
 	float volumeArray[] = { 1.0, 0.75, 0.50, 0.25, 0.10 };
 	float selectedVolume = GetClientVolume(client);
 
@@ -320,7 +318,7 @@ public int VolumeMenuHandler(Menu menu, MenuAction action, int client, int param
 {
 	if(action == MenuAction_Select){
 		char sInfo[10];
-		GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+		menu.GetItem(param2, sInfo, sizeof(sInfo));
 		SetClientCookie(client, g_ResVolumeCookie, sInfo);
 		VolumeMenu(client);
 	}
@@ -346,9 +344,9 @@ void RefreshSounds(int client)
 	char ctSoundPath[PLATFORM_MAX_PATH];
 	char drawSoundPath[PLATFORM_MAX_PATH];
 	
-	GetConVarString(g_hTRPath, trSoundPath, sizeof(trSoundPath));
-	GetConVarString(g_hCTPath, ctSoundPath, sizeof(ctSoundPath));
-	GetConVarString(g_hDrawPath, drawSoundPath, sizeof(drawSoundPath));
+	g_hTRPath.GetString(trSoundPath, sizeof(trSoundPath));
+	g_hTRPath.GetString(ctSoundPath, sizeof(ctSoundPath));
+	g_hTRPath.GetString(drawSoundPath, sizeof(drawSoundPath));
 		
 	SamePath = StrEqual(trSoundPath, ctSoundPath);
 
@@ -362,7 +360,7 @@ void RefreshSounds(int client)
 		ReplyToCommand(client, "[AbNeR RES] TR SOUNDS: %d sounds loaded from \"sound/%s\"", LoadSounds(trSoundsArray, g_hTRPath), trSoundPath);
 	}
 	
-	int RoundDrawOption = GetConVarInt(g_hDrawPath);
+	int RoundDrawOption = g_hDrawPath.IntValue;
 	if(RoundDrawOption != 0)
 		switch(RoundDrawOption)
 		{
@@ -381,7 +379,7 @@ void RefreshSounds(int client)
 			default:
 			{
 				char drawSoundsPath[PLATFORM_MAX_PATH];
-				GetConVarString(g_hDrawPath, drawSoundsPath, sizeof(drawSoundsPath));
+				g_hDrawPath.GetString(drawSoundsPath, sizeof(drawSoundsPath));
 				
 				if(!StrEqual(drawSoundsPath, ""))
 					ReplyToCommand(client, "[AbNeR RES] DRAW SOUNDS: %d sounds loaded from \"sound/%s\"", LoadSounds(drawSoundsArray, g_hDrawPath), drawSoundsPath);
@@ -390,7 +388,6 @@ void RefreshSounds(int client)
 	
 	ParseSongNameKvFile();
 }
-
 
 public void ParseSongNameKvFile()
 {
@@ -403,7 +400,7 @@ public void ParseSongNameKvFile()
 	if (!FileExists(sPath))
 		return;
 
-	KeyValues hKeyValues = CreateKeyValues("Abner Res");
+	KeyValues hKeyValues = new KeyValues("Abner Res");
 	if (!hKeyValues.ImportFromFile(sPath))
 		return;
 
@@ -422,9 +419,6 @@ public void ParseSongNameKvFile()
 	}
 	hKeyValues.Close();
 }
- 
-
-
 
 public Action CommandLoad(int client, int args)
 {   
@@ -432,13 +426,14 @@ public Action CommandLoad(int client, int args)
 	return Plugin_Handled;
 }
 
-float GetClientVolume(int client){
-	float defaultVolume = GetConVarFloat(g_SoundVolume);
+float GetClientVolume(int client)
+{
+	float defaultVolume = g_SoundVolume.FloatValue;
 
 	char sCookieValue[11];
 	GetClientCookie(client, g_ResVolumeCookie, sCookieValue, sizeof(sCookieValue));
 
-	if(!GetConVarBool(g_ClientSettings) || StrEqual(sCookieValue, "") || StrEqual(sCookieValue, "0"))
+	if(!g_ClientSettings.BoolValue || StrEqual(sCookieValue, "") || StrEqual(sCookieValue, "0"))
 		Format(sCookieValue , sizeof(sCookieValue), "%0.2f", defaultVolume);
 
 	return StringToFloat(sCookieValue);
